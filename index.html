@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>지렁이 레이싱 - 모바일</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #87CEEB, #98FB98);
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .orientation-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 10000;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .orientation-warning h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #FFD700;
+        }
+
+        .orientation-warning p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .rotate-icon {
+            font-size: 4rem;
+            animation: rotate 2s infinite ease-in-out;
+        }
+
+        @keyframes rotate {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: linear-gradient(to bottom, #87CEEB 0%, #90EE90 50%, #8B4513 100%);
+            touch-action: none;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .game-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 12px;
+            border-radius: 8px;
+            pointer-events: all;
+            font-weight: bold;
+        }
+
+        .countdown {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #FF4444;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 30;
+        }
+
+        .progress-bar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            height: 15px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            border: 2px solid #333;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #4ECDC4);
+            border-radius: 6px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 30;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .message.win {
+            color: #00ff00;
+        }
+
+        .message.fail {
+            color: #ff0000;
+        }
+
+        .touch-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            animation: pulse 2s infinite;
+            z-index: 20;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+            50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+        }
+
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .start-screen h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: #FFD700;
+        }
+
+        .start-screen p {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .start-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+            touch-action: manipulation;
+        }
+
+        .start-button:active {
+            background: #45a049;
+            transform: scale(0.98);
+        }
+
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            backdrop-filter: blur(10px);
+            max-width: 90vw;
+        }
+
+        .scoreboard {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            width: 90vw;
+            max-width: 400px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .scoreboard h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .game-button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+            font-weight: bold;
+            touch-action: manipulation;
+        }
+
+        .game-button:active {
+            transform: scale(0.95);
+        }
+
+        .next-button {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .exit-button {
+            background: #f44336;
+            color: white;
+        }
+
+        /* 가로 모드 전용 스타일 */
+        @media screen and (orientation: landscape) {
+            .orientation-warning {
+                display: none;
+            }
+            
+            .game-container {
+                display: block;
+            }
+
+            .game-info {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            .progress-bar {
+                width: 150px;
+                height: 12px;
+            }
+
+            .countdown {
+                font-size: 28px;
+            }
+
+            .message {
+                font-size: 28px;
+            }
+        }
+
+        /* 세로 모드에서 경고 표시 */
+        @media screen and (orientation: portrait) {
+            .orientation-warning {
+                display: flex;
+            }
+            
+            .game-container {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 세로모드 경고 화면 -->
+    <div class="orientation-warning" id="orientationWarning">
+        <div class="rotate-icon">📱</div>
+        <h1>화면을 가로로 돌려주세요!</h1>
+        <p>지렁이 레이싱은 가로 모드에서 플레이할 수 있습니다.</p>
+        <p>휴대폰을 옆으로 돌려서 가로 모드로 바꿔주세요.</p>
+    </div>
+
+    <div class="game-container">
+        <canvas class="game-canvas" id="gameCanvas"></canvas>
+        
+        <div class="ui-overlay">
+            <div class="game-info">
+                <div>Stage: <span id="stageDisplay">1</span></div>
+                <div>거리: <span id="distanceDisplay">0</span>m / 100m</div>
+                <div>클릭: <span id="clickDisplay">0</span></div>
+                <div>닭 딜레이: <span id="delayDisplay">5</span>s</div>
+            </div>
+            
+            <div class="countdown" id="countdown"></div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="touch-indicator" id="touchIndicator">
+                화면을 터치하세요! 🐛
+            </div>
+            
+            <div class="message" id="message"></div>
+        </div>
+
+        <div class="scoreboard" id="scoreboard">
+            <h2 id="scoreTitle">스테이지 완료!</h2>
+            <div class="score-display">
+                <p>Stage <span id="finalStage">1</span> 완료!</p>
+                <p>다음 스테이지: 닭이 <span id="nextDelay">4</span>초 후 출발</p>
+            </div>
+            <div class="button-container">
+                <button class="game-button exit-button" onclick="exitGame()">처음으로</button>
+                <button class="game-button next-button" onclick="nextStage()">다음 스테이지</button>
+            </div>
+        </div>
+
+        <div class="start-screen" id="startScreen">
+            <h1>🐛 지렁이 레이싱 🐔</h1>
+            <div class="instructions">
+                <p><strong>📱 모바일 게임 방법:</strong></p>
+                <p>🎯 지렁이를 100미터 결승선까지 이동시키세요!</p>
+                <p>👆 지렁이가 움츠러들 때만 화면을 터치하면 전진!</p>
+                <p>🟡 노란 원이 보일 때 터치 가능!</p>
+                <p>💨 가장 움츠러든 상태(진한 초록)에서 터치하면 방귀 공격!</p>
+                <p>🐔 닭이 지렁이를 잡으면 게임 오버</p>
+                <p>⬆️ 스테이지가 올라갈수록 더 어려워져요!</p>
+                <p><strong>❌ 펼침 상태에서 터치하면 1초 기절!</strong></p>
+            </div>
+            <button class="start-button" onclick="startGame()">🎮 게임 시작</button>
+        </div>
+    </div>
+
+    <script>
+        class WormRacingGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.setupCanvas();
+                this.initializeGame();
+                this.setupEventListeners();
+                this.checkOrientation();
+            }
+
+            checkOrientation() {
+                const updateOrientation = () => {
+                    const orientationWarning = document.getElementById('orientationWarning');
+                    const gameContainer = document.querySelector('.game-container');
+                    
+                    if (window.innerHeight > window.innerWidth) {
+                        // 세로 모드
+                        orientationWarning.style.display = 'flex';
+                        gameContainer.style.display = 'none';
+                    } else {
+                        // 가로 모드
+                        orientationWarning.style.display = 'none';
+                        gameContainer.style.display = 'block';
+                        this.setupCanvas();
+                    }
+                };
+
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(updateOrientation, 100);
+                });
+                window.addEventListener('resize', updateOrientation);
+                updateOrientation();
+            }
+
+            setupCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.racePixelWidth = this.canvas.width * 0.8;
+            }
+
+            initializeGame() {
+                if (this.stage === undefined) {
+                    this.stage = 1;
+                }
+                
+                this.gameStarted = false;
+                this.gameEnded = false;
+                this.raceStarted = false;
+                
+                this.raceDistance = 100;
+                this.pixelsPerMeter = (this.canvas.width - 100) / this.raceDistance;
+                
+                this.worm = {
+                    x: 80,
+                    y: this.canvas.height - 120, // 더 위쪽으로 위치 조정
+                    distance: 0,
+                    animationState: 0,
+                    animationTimer: 0,
+                    size: 30,
+                    canMove: false,
+                    clickCount: 0,
+                    lastFartTime: 0,
+                    stunned: false,
+                    stunnedTimer: 0
+                };
+                
+                this.chicken = {
+                    x: 50,
+                    y: this.canvas.height - 130, // 더 위쪽으로 위치 조정
+                    distance: 0,
+                    speed: 1.2 * Math.pow(1.1, this.stage - 1),
+                    active: false,
+                    stunned: false,
+                    stunnedTimer: 0
+                };
+                
+                this.farts = [];
+                this.chickenDelay = Math.max(1, 6 - this.stage);
+                this.countdown = this.chickenDelay;
+                this.countdownTimer = null;
+                this.gameTimer = null;
+                this.animationTimer = null;
+                
+                console.log('Mobile game initialized for stage:', this.stage);
+                this.updateDisplay();
+                this.draw();
+            }
+
+            setupEventListeners() {
+                // 터치 이벤트만 사용 (모바일 전용)
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.handleTouch(e.touches[0]);
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                }, { passive: false });
+
+                // 마우스 이벤트도 지원 (데스크톱에서 테스트용)
+                this.canvas.addEventListener('click', (e) => {
+                    this.handleTouch(e);
+                });
+                
+                window.addEventListener('resize', () => this.setupCanvas());
+            }
+
+            handleTouch(e) {
+                if (!this.raceStarted && !this.gameStarted) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const touchX = e.clientX - rect.left;
+                const touchY = e.clientY - rect.top;
+                
+                const wormScreenX = this.worm.x + (this.worm.distance * this.pixelsPerMeter);
+                const distance = Math.sqrt(
+                    Math.pow(touchX - wormScreenX, 2) + 
+                    Math.pow(touchY - this.worm.y, 2)
+                );
+                
+                console.log('Touch detected:', {
+                    touchX, touchY, wormScreenX, 
+                    wormY: this.worm.y, 
+                    distance, 
+                    animationState: this.worm.animationState,
+                    canMove: this.worm.canMove,
+                    wormStunned: this.worm.stunned
+                });
+                
+                if (this.worm.stunned) {
+                    console.log('Worm is stunned, ignoring touch');
+                    this.showTouchFeedback('기절 중! 😵', touchX, touchY, '#FF0000');
+                    return;
+                }
+                
+                // 더 넓은 터치 영역
+                if (distance <= 100) {
+                    if (this.worm.animationState === 0 || this.worm.animationState === 4) {
+                        this.worm.stunned = true;
+                        this.worm.stunnedTimer = 1000;
+                        this.showTouchFeedback('잘못된 타이밍! 😵', touchX, touchY, '#FF0000');
+                        console.log('Worm stunned for wrong timing');
+                        return;
+                    }
+                    
+                    if (this.worm.canMove) {
+                        this.worm.clickCount++;
+                        
+                        if (this.worm.animationState === 2) {
+                            this.shootFart();
+                            this.showTouchFeedback('방귀! 💨', touchX, touchY, '#FFD700');
+                            console.log('Fart shot!');
+                        } else {
+                            this.showTouchFeedback('+1', touchX, touchY, '#00FF00');
+                        }
+                        console.log('Touch recorded! Click count:', this.worm.clickCount);
+                    } else {
+                        this.showTouchFeedback('아직 안돼! ⏳', touchX, touchY, '#FFA500');
+                        console.log('Cannot move - wrong animation state');
+                    }
+                } else {
+                    this.showTouchFeedback('지렁이를 터치! 👆', touchX, touchY, '#CCCCCC');
+                    console.log('Touch outside worm area');
+                }
+            }
+
+            showTouchFeedback(text, x, y, color) {
+                const feedback = document.createElement('div');
+                feedback.textContent = text;
+                feedback.style.cssText = `
+                    position: absolute;
+                    left: ${x}px;
+                    top: ${y}px;
+                    color: ${color};
+                    font-size: 16px;
+                    font-weight: bold;
+                    pointer-events: none;
+                    z-index: 1000;
+                    transform: translate(-50%, -50%);
+                    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                    animation: touchFeedback 1s ease-out forwards;
+                `;
+                
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes touchFeedback {
+                        0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                        100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
+                    }
+                `;
+                document.head.appendChild(style);
+                document.body.appendChild(feedback);
+                
+                setTimeout(() => {
+                    document.body.removeChild(feedback);
+                    document.head.removeChild(style);
+                }, 1000);
+            }
+
+            startCountdown() {
+                this.countdown = this.chickenDelay;
+                document.getElementById('countdown').textContent = this.countdown;
+                document.getElementById('touchIndicator').style.display = 'block';
+                
+                this.startWormAnimation();
+                
+                this.countdownTimer = setInterval(() => {
+                    this.countdown--;
+                    if (this.countdown > 0) {
+                        document.getElementById('countdown').textContent = this.countdown;
+                    } else {
+                        document.getElementById('countdown').textContent = 'START!!!';
+                        setTimeout(() => {
+                            document.getElementById('countdown').textContent = '';
+                            this.startRace();
+                        }, 1000);
+                        clearInterval(this.countdownTimer);
+                    }
+                }, 1000);
+            }
+
+            startWormAnimation() {
+                this.animationTimer = setInterval(() => {
+                    this.updateWormAnimation();
+                }, 600); // 모바일에서 더 느리게
+                
+                this.updateWormAnimation();
+            }
+
+            startRace() {
+                this.raceStarted = true;
+                this.chicken.active = true;
+                
+                this.gameTimer = setInterval(() => {
+                    this.updateGame();
+                }, 100);
+                
+                if (this.animationTimer) {
+                    clearInterval(this.animationTimer);
+                }
+                this.animationTimer = setInterval(() => {
+                    this.updateWormAnimation();
+                }, 500);
+            }
+
+            updateWormAnimation() {
+                const prevState = this.worm.animationState;
+                this.worm.animationState = (this.worm.animationState + 1) % 5;
+                this.worm.canMove = (this.worm.animationState >= 1 && this.worm.animationState <= 3);
+                
+                if ((prevState === 3 && this.worm.animationState === 4) || 
+                    (prevState === 4 && this.worm.animationState === 0)) {
+                    this.moveWorm();
+                }
+                
+                // 터치 인디케이터 업데이트
+                const indicator = document.getElementById('touchIndicator');
+                if (this.worm.canMove) {
+                    indicator.textContent = '지금 터치! 🎯';
+                    indicator.style.backgroundColor = 'rgba(255, 215, 0, 0.9)';
+                } else {
+                    indicator.textContent = '기다려! ⏳';
+                    indicator.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                }
+                
+                this.draw();
+            }
+
+            updateGame() {
+                if (!this.raceStarted || this.gameEnded) return;
+                
+                if (this.chicken.active && !this.chicken.stunned) {
+                    this.chicken.distance += this.chicken.speed / 10;
+                }
+                
+                if (this.chicken.stunned) {
+                    this.chicken.stunnedTimer -= 100;
+                    if (this.chicken.stunnedTimer <= 0) {
+                        this.chicken.stunned = false;
+                    }
+                }
+                
+                if (this.worm.stunned) {
+                    this.worm.stunnedTimer -= 100;
+                    if (this.worm.stunnedTimer <= 0) {
+                        this.worm.stunned = false;
+                    }
+                }
+                
+                this.updateFarts();
+                this.checkCollisions();
+                
+                if (this.worm.distance >= this.raceDistance) {
+                    this.winGame();
+                }
+                
+                this.updateDisplay();
+                this.draw();
+            }
+
+            moveWorm() {
+                if (this.worm.clickCount > 0) {
+                    this.worm.distance += this.worm.clickCount;
+                    console.log(`Worm advanced by ${this.worm.clickCount} meters!`);
+                    this.worm.clickCount = 0;
+                }
+            }
+
+            shootFart() {
+                const currentTime = Date.now();
+                if (currentTime - this.worm.lastFartTime < 1000) return;
+                
+                this.farts.push({
+                    x: this.worm.distance,
+                    y: this.worm.y,
+                    speed: 5,
+                    life: 100
+                });
+                this.worm.lastFartTime = currentTime;
+            }
+
+            updateFarts() {
+                for (let i = this.farts.length - 1; i >= 0; i--) {
+                    const fart = this.farts[i];
+                    fart.x -= fart.speed / 10;
+                    fart.life--;
+                    
+                    if (Math.abs(fart.x - this.chicken.distance) < 2 && !this.chicken.stunned) {
+                        this.chicken.stunned = true;
+                        this.chicken.stunnedTimer = 500;
+                        this.farts.splice(i, 1);
+                        continue;
+                    }
+                    
+                    if (fart.life <= 0) {
+                        this.farts.splice(i, 1);
+                    }
+                }
+            }
+
+            checkCollisions() {
+                if (this.chicken.active && !this.chicken.stunned && 
+                    this.chicken.distance >= this.worm.distance - 1) {
+                    this.loseGame();
+                }
+            }
+
+            winGame() {
+                this.gameEnded = true;
+                this.showMessage('승리! 🎉', 'win');
+                document.getElementById('touchIndicator').style.display = 'none';
+                this.stopGame();
+                
+                setTimeout(() => {
+                    this.showScoreboard(true);
+                }, 2000);
+            }
+
+            loseGame() {
+                this.gameEnded = true;
+                this.showMessage('실패! 🐔', 'fail');
+                document.getElementById('touchIndicator').style.display = 'none';
+                this.stopGame();
+                
+                setTimeout(() => {
+                    this.showScoreboard(false);
+                }, 2000);
+            }
+
+            stopGame() {
+                if (this.gameTimer) clearInterval(this.gameTimer);
+                if (this.animationTimer) clearInterval(this.animationTimer);
+                if (this.countdownTimer) clearInterval(this.countdownTimer);
+            }
+
+            showMessage(text, type) {
+                const message = document.getElementById('message');
+                message.textContent = text;
+                message.className = `message ${type}`;
+                message.style.opacity = '1';
+                
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                }, 2000);
+            }
+
+            showScoreboard(won) {
+                const scoreboard = document.getElementById('scoreboard');
+                const scoreTitle = document.getElementById('scoreTitle');
+                const nextButton = document.querySelector('.next-button');
+                
+                if (won) {
+                    scoreTitle.textContent = '스테이지 완료! 🎉';
+                    nextButton.style.display = 'inline-block';
+                    document.getElementById('finalStage').textContent = this.stage;
+                    const nextStageDelay = Math.max(1, 6 - (this.stage + 1));
+                    document.getElementById('nextDelay').textContent = nextStageDelay;
+                } else {
+                    scoreTitle.textContent = '게임 오버! 🐔';
+                    nextButton.style.display = 'none';
+                }
+                
+                scoreboard.style.display = 'block';
+            }
+
+            updateDisplay() {
+                document.getElementById('stageDisplay').textContent = this.stage;
+                document.getElementById('distanceDisplay').textContent = Math.floor(this.worm.distance);
+                document.getElementById('clickDisplay').textContent = this.worm.clickCount;
+                document.getElementById('delayDisplay').textContent = this.chickenDelay;
+                
+                const progress = (this.worm.distance / this.raceDistance) * 100;
+                document.getElementById('progressFill').style.width = Math.min(100, Math.max(0, progress)) + '%';
+            }
+
+            draw() {
+                // 하늘 배경
+                const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+                gradient.addColorStop(0, '#87CEEB');
+                gradient.addColorStop(0.6, '#90EE90');
+                gradient.addColorStop(1, '#8B4513');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 땅
+                this.ctx.fillStyle = '#8B4513';
+                this.ctx.fillRect(0, this.canvas.height - 80, this.canvas.width, 80);
+                
+                // 잔디
+                this.ctx.fillStyle = '#228B22';
+                this.ctx.fillRect(0, this.canvas.height - 90, this.canvas.width, 10);
+                
+                // 결승선과 시작선 먼저 그리기
+                this.drawFinishLine();
+                
+                // 지렁이 항상 그리기 (디버깅용 빨간 점도 추가)
+                this.drawWorm();
+                
+                // 닭이 활성화되면 그리기
+                if (this.chicken.active) {
+                    this.drawChicken();
+                }
+                
+                // 방귀 그리기
+                this.drawFarts();
+                
+                // 디버깅: 지렁이 위치에 빨간 점 표시
+                const wormScreenX = this.worm.x + (this.worm.distance * this.pixelsPerMeter);
+                this.ctx.fillStyle = '#FF0000';
+                this.ctx.beginPath();
+                this.ctx.arc(wormScreenX, this.worm.y, 5, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 닭 위치에 파란 점 표시 (디버깅용)
+                if (this.chicken.active) {
+                    const chickenScreenX = this.chicken.x + (this.chicken.distance * this.pixelsPerMeter);
+                    this.ctx.fillStyle = '#0000FF';
+                    this.ctx.beginPath();
+                    this.ctx.arc(chickenScreenX, this.chicken.y, 5, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+            }
+
+            drawWorm() {
+                const screenX = this.worm.x + (this.worm.distance * this.pixelsPerMeter);
+                const screenY = this.worm.y;
+                
+                this.ctx.save();
+                this.ctx.translate(screenX, screenY);
+                
+                let scaleX = 1, scaleY = 1, bodyColor = '#32CD32';
+                
+                switch (this.worm.animationState) {
+                    case 0: case 4:
+                        scaleX = 1.4; scaleY = 0.6;
+                        bodyColor = '#90EE90';
+                        break;
+                    case 1: case 3:
+                        scaleX = 1; scaleY = 1;
+                        bodyColor = '#32CD32';
+                        break;
+                    case 2:
+                        scaleX = 0.6; scaleY = 1.4;
+                        bodyColor = '#228B22';
+                        break;
+                }
+                
+            drawWorm() {
+                const screenX = this.worm.x + (this.worm.distance * this.pixelsPerMeter);
+                const screenY = this.worm.y;
+                
+                console.log('Drawing worm at:', screenX, screenY, 'Canvas size:', this.canvas.width, this.canvas.height);
+                
+                this.ctx.save();
+                this.ctx.translate(screenX, screenY);
+                
+                let scaleX = 1, scaleY = 1, bodyColor = '#32CD32';
+                
+                switch (this.worm.animationState) {
+                    case 0: case 4:
+                        scaleX = 1.4; scaleY = 0.6;
+                        bodyColor = '#90EE90';
+                        break;
+                    case 1: case 3:
+                        scaleX = 1; scaleY = 1;
+                        bodyColor = '#32CD32';
+                        break;
+                    case 2:
+                        scaleX = 0.6; scaleY = 1.4;
+                        bodyColor = '#228B22';
+                        break;
+                }
+                
+                this.ctx.scale(scaleX, scaleY);
+                
+                // 터치 가능 영역 표시 (항상 보이도록)
+                if (this.worm.canMove && !this.worm.stunned) {
+                    this.ctx.strokeStyle = '#FFD700';
+                    this.ctx.lineWidth = 4;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, 60, 0, 2 * Math.PI);
+                    this.ctx.stroke();
+                }
+                
+                // 기절 상태 표시
+                if (this.worm.stunned) {
+                    this.ctx.strokeStyle = '#FF0000';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, 50, 0, 2 * Math.PI);
+                    this.ctx.stroke();
+                }
+                
+                // 지렁이 몸체 (더 크게)
+                const segments = 6;
+                const segmentSize = 15; // 크기 증가
+                
+                for (let i = 0; i < segments; i++) {
+                    const x = -30 + (i * 12); // 간격 증가
+                    const size = segmentSize - (Math.abs(i - segments/2) * 1);
+                    
+                    // 그림자
+                    this.ctx.fillStyle = '#006400';
+                    this.ctx.beginPath();
+                    this.ctx.arc(x + 2, 2, size, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    
+                    // 몸체
+                    this.ctx.fillStyle = bodyColor;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, 0, size, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    
+                    // 하이라이트
+                    this.ctx.fillStyle = '#98FB98';
+                    this.ctx.beginPath();
+                    this.ctx.arc(x - 3, -3, size * 0.4, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                }
+                
+                // 머리 (더 크게)
+                this.ctx.fillStyle = '#006400';
+                this.ctx.beginPath();
+                this.ctx.arc(32, 2, 18, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                this.ctx.fillStyle = bodyColor;
+                this.ctx.beginPath();
+                this.ctx.arc(30, 0, 18, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 눈 (더 크게)
+                this.ctx.fillStyle = '#000000';
+                this.ctx.beginPath();
+                this.ctx.arc(35, -6, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.beginPath();
+                this.ctx.arc(35, 6, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 눈 하이라이트
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.beginPath();
+                this.ctx.arc(36, -5, 1.5, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.beginPath();
+                this.ctx.arc(36, 7, 1.5, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 입
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.arc(40, 0, 4, 0, Math.PI);
+                this.ctx.stroke();
+                
+                this.ctx.restore();
+            }
+
+            drawChicken() {
+                const screenX = this.chicken.x + (this.chicken.distance * this.pixelsPerMeter);
+                const screenY = this.chicken.y;
+                
+                console.log('Drawing chicken at:', screenX, screenY);
+                
+                this.ctx.save();
+                this.ctx.translate(screenX, screenY);
+                
+                if (this.chicken.stunned) {
+                    this.ctx.rotate(Math.PI);
+                }
+                
+                // 닭 몸체 (더 크게)
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.strokeStyle = '#DDDDDD';
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                this.ctx.ellipse(0, 5, 22, 28, 0, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.stroke();
+                
+                // 머리 (더 크게)
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.beginPath();
+                this.ctx.ellipse(20, -8, 14, 14, 0, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.stroke();
+                
+                // 부리 (더 크게)
+                this.ctx.fillStyle = '#FFA500';
+                this.ctx.beginPath();
+                this.ctx.moveTo(30, -8);
+                this.ctx.lineTo(38, -6);
+                this.ctx.lineTo(30, -4);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // 벼슬 (더 크게)
+                this.ctx.fillStyle = '#FF0000';
+                this.ctx.beginPath();
+                this.ctx.moveTo(12, -18);
+                this.ctx.lineTo(16, -24);
+                this.ctx.lineTo(20, -22);
+                this.ctx.lineTo(24, -26);
+                this.ctx.lineTo(28, -18);
+                this.ctx.lineTo(22, -15);
+                this.ctx.lineTo(16, -16);
+                this.ctx.closePath();
+                this.ctx.fill();
+                
+                // 눈 (더 크게)
+                this.ctx.fillStyle = '#000000';
+                this.ctx.beginPath();
+                this.ctx.arc(24, -10, 3, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 눈 하이라이트
+                this.ctx.fillStyle = '#FFFFFF';
+                this.ctx.beginPath();
+                this.ctx.arc(25, -11, 1.5, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // 날개 (더 크게)
+                this.ctx.fillStyle = '#F0F0F0';
+                this.ctx.strokeStyle = '#CCCCCC';
+                this.ctx.beginPath();
+                this.ctx.ellipse(-8, 0, 10, 18, -0.3, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.stroke();
+                
+                // 꼬리 (더 크게)
+                this.ctx.fillStyle = '#E0E0E0';
+                this.ctx.beginPath();
+                this.ctx.ellipse(-16, 0, 8, 14, 0.5, 0, 2 * Math.PI);
+                this.ctx.fill();
+                this.ctx.stroke();
+                
+                // 다리 (더 크게)
+                this.ctx.strokeStyle = '#FFA500';
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                this.ctx.moveTo(-8, 30);
+                this.ctx.lineTo(-8, 42);
+                this.ctx.moveTo(-2, 28);
+                this.ctx.lineTo(-2, 40);
+                this.ctx.moveTo(8, 30);
+                this.ctx.lineTo(8, 42);
+                this.ctx.stroke();
+                
+                // 발가락
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                this.ctx.moveTo(-12, 42);
+                this.ctx.lineTo(-4, 42);
+                this.ctx.moveTo(4, 42);
+                this.ctx.lineTo(12, 42);
+                this.ctx.stroke();
+                
+                this.ctx.restore();
+            }
+
+            drawFarts() {
+                this.farts.forEach(fart => {
+                    const screenX = this.worm.x + (fart.x * this.pixelsPerMeter);
+                    
+                    this.ctx.fillStyle = `rgba(255, 255, 0, ${fart.life / 100})`;
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(screenX, fart.y, 12, 8, 0, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    
+                    this.ctx.fillStyle = `rgba(255, 192, 203, ${fart.life / 100})`;
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(screenX - 8, fart.y, 8, 6, 0, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                });
+            }
+
+            drawFinishLine() {
+                const finishX = this.worm.x + (this.raceDistance * this.pixelsPerMeter);
+                
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 3;
+                this.ctx.setLineDash([15, 15]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(finishX, this.canvas.height - 120);
+                this.ctx.lineTo(finishX, this.canvas.height - 30);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+                
+                this.ctx.fillStyle = '#000000';
+                this.ctx.font = 'bold 14px Arial';
+                this.ctx.fillText('FINISH', finishX - 20, this.canvas.height - 130);
+                
+                // 시작선
+                const startX = this.worm.x;
+                this.ctx.strokeStyle = '#00FF00';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([8, 8]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(startX, this.canvas.height - 120);
+                this.ctx.lineTo(startX, this.canvas.height - 30);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+                
+                this.ctx.fillStyle = '#00AA00';
+                this.ctx.font = 'bold 12px Arial';
+                this.ctx.fillText('START', startX - 15, this.canvas.height - 130);
+            }
+
+            nextStage() {
+                document.getElementById('scoreboard').style.display = 'none';
+                this.stage++;
+                
+                this.gameStarted = false;
+                this.gameEnded = false;
+                this.raceStarted = false;
+                
+                this.worm.distance = 0;
+                this.worm.animationState = 0;
+                this.worm.canMove = false;
+                this.worm.clickCount = 0;
+                this.worm.lastFartTime = 0;
+                this.worm.stunned = false;
+                this.worm.stunnedTimer = 0;
+                
+                this.chicken.distance = 0;
+                this.chicken.speed = 1.2 * Math.pow(1.1, this.stage - 1);
+                this.chicken.active = false;
+                this.chicken.stunned = false;
+                this.chicken.stunnedTimer = 0;
+                
+                this.farts = [];
+                this.chickenDelay = Math.max(1, 6 - this.stage);
+                this.countdown = this.chickenDelay;
+                
+                this.stopGame();
+                this.updateDisplay();
+                this.draw();
+                this.startCountdown();
+            }
+
+            exitGame() {
+                document.getElementById('scoreboard').style.display = 'none';
+                document.getElementById('startScreen').style.display = 'flex';
+                document.getElementById('touchIndicator').style.display = 'none';
+                this.stopGame();
+                
+                this.stage = 1;
+                this.initializeGame();
+            }
+
+            start() {
+                document.getElementById('startScreen').style.display = 'none';
+                this.gameStarted = true;
+                this.startCountdown();
+            }
+        }
+
+        let game;
+
+        function startGame() {
+            game = new WormRacingGame();
+            game.start();
+        }
+
+        function nextStage() {
+            if (game) {
+                game.nextStage();
+            }
+        }
+
+        function exitGame() {
+            if (game) {
+                game.exitGame();
+            }
+        }
+
+        window.addEventListener('load', () => {
+            document.getElementById('startScreen').style.display = 'flex';
+        });
+    </script>
+</body>
+</html>
