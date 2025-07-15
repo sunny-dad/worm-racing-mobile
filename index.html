@@ -281,7 +281,13 @@
         /* 가로 모드 전용 스타일 */
         @media screen and (orientation: landscape) {
             .orientation-warning {
-                display: none;
+                display: none !important;
+            }
+            
+            /* 가로모드에서도 시작화면이 우선 표시되도록 */
+            .start-screen {
+                display: flex !important;
+                z-index: 2000 !important;
             }
             
             .game-container {
@@ -310,11 +316,16 @@
         /* 세로 모드에서 경고 표시 */
         @media screen and (orientation: portrait) {
             .orientation-warning {
-                display: flex;
+                display: flex !important;
+                z-index: 3000 !important;
             }
             
             .game-container {
-                display: none;
+                display: none !important;
+            }
+            
+            .start-screen {
+                display: none !important;
             }
         }
     </style>
@@ -403,23 +414,53 @@
                 const updateOrientation = () => {
                     const orientationWarning = document.getElementById('orientationWarning');
                     const gameContainer = document.querySelector('.game-container');
+                    const startScreen = document.getElementById('startScreen');
+                    
+                    console.log('Orientation check:', {
+                        width: window.innerWidth,
+                        height: window.innerHeight,
+                        isPortrait: window.innerHeight > window.innerWidth,
+                        gameStarted: this.gameStarted
+                    });
                     
                     if (window.innerHeight > window.innerWidth) {
-                        // 세로 모드
-                        orientationWarning.style.display = 'flex';
-                        gameContainer.style.display = 'none';
+                        // 세로 모드 - 회전 경고 표시
+                        console.log('Portrait mode detected');
+                        if (orientationWarning) orientationWarning.style.display = 'flex';
+                        if (gameContainer) gameContainer.style.display = 'none';
+                        if (startScreen) startScreen.style.display = 'none';
                     } else {
                         // 가로 모드
-                        orientationWarning.style.display = 'none';
-                        gameContainer.style.display = 'block';
+                        console.log('Landscape mode detected');
+                        if (orientationWarning) orientationWarning.style.display = 'none';
+                        
+                        if (!this.gameStarted) {
+                            // 게임이 시작되지 않았으면 시작 화면 표시
+                            console.log('Showing start screen in landscape');
+                            if (startScreen) startScreen.style.display = 'flex';
+                            if (gameContainer) gameContainer.style.display = 'none';
+                        } else {
+                            // 게임이 시작되었으면 게임 화면 표시
+                            console.log('Showing game container in landscape');
+                            if (startScreen) startScreen.style.display = 'none';
+                            if (gameContainer) gameContainer.style.display = 'block';
+                        }
+                        
                         this.setupCanvas();
                     }
                 };
 
+                // 이벤트 리스너 등록
                 window.addEventListener('orientationchange', () => {
-                    setTimeout(updateOrientation, 100);
+                    console.log('Orientation change event');
+                    setTimeout(updateOrientation, 200);
                 });
-                window.addEventListener('resize', updateOrientation);
+                window.addEventListener('resize', () => {
+                    console.log('Resize event');
+                    updateOrientation();
+                });
+                
+                // 즉시 실행
                 updateOrientation();
             }
 
@@ -1194,18 +1235,21 @@
 
             start() {
                 console.log('Game start called');
+                this.gameStarted = true; // 이것을 먼저 설정
+                
                 const startScreen = document.getElementById('startScreen');
                 const gameContainer = document.querySelector('.game-container');
                 
                 // 시작 화면 숨기고 게임 컨테이너 표시
                 if (startScreen) {
                     startScreen.style.display = 'none';
+                    console.log('Start screen hidden');
                 }
                 if (gameContainer) {
                     gameContainer.style.display = 'block';
+                    console.log('Game container shown');
                 }
                 
-                this.gameStarted = true;
                 this.startCountdown();
             }
         }
@@ -1231,25 +1275,35 @@
         }
 
         window.addEventListener('load', () => {
+            console.log('Page loaded');
+            
             // 페이지 로드 시 시작 화면을 강제로 표시
             const startScreen = document.getElementById('startScreen');
             const gameContainer = document.querySelector('.game-container');
+            const orientationWarning = document.getElementById('orientationWarning');
             
-            // 게임 화면 숨기고 시작 화면 표시
-            if (gameContainer) {
-                gameContainer.style.display = 'none';
-            }
-            if (startScreen) {
-                startScreen.style.display = 'flex';
-                console.log('Start screen forced to display');
+            // 초기 상태 설정
+            if (window.innerHeight > window.innerWidth) {
+                // 세로 모드
+                console.log('Initial: Portrait mode');
+                if (orientationWarning) orientationWarning.style.display = 'flex';
+                if (gameContainer) gameContainer.style.display = 'none';
+                if (startScreen) startScreen.style.display = 'none';
+            } else {
+                // 가로 모드
+                console.log('Initial: Landscape mode - showing start screen');
+                if (orientationWarning) orientationWarning.style.display = 'none';
+                if (gameContainer) gameContainer.style.display = 'none';
+                if (startScreen) startScreen.style.display = 'flex';
             }
             
-            // 1초 후에 다시 한번 확인
+            // 잠시 후 한번 더 확인
             setTimeout(() => {
-                if (startScreen) {
+                if (window.innerHeight <= window.innerWidth && startScreen) {
                     startScreen.style.display = 'flex';
+                    console.log('Double-check: Start screen displayed');
                 }
-            }, 100);
+            }, 300);
         });
     </script>
 </body>
